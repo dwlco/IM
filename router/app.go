@@ -25,6 +25,8 @@ func Router() *gin.Engine {
 	r.GET("/toRegister", service.ToRegister)
 
 	r.POST("/searchFriends", service.SearchFriend)
+	//发送图片
+	r.POST("/attach/upload", service.Upload)
 
 	//聊天页面
 	r.GET("/toChat", service.ToChat)
