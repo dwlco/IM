@@ -1,0 +1,110 @@
+info:
+  contact: {}
+paths:
+  /index:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      tags:
+      - 首页
+  /user/createUser:
+    get:
+      parameters:
+      - description: 用户名
+        in: query
+        name: name
+        type: string
+      - description: 密码
+        in: query
+        name: password
+        type: string
+      - description: 确认密码
+        in: query
+        name: repassword
+        type: string
+      responses:
+        "200":
+          description: code","message"}
+          schema:
+            type: string
+      summary: 新增用户
+      tags:
+      - user
+  /user/deleteUser:
+    get:
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      responses:
+        "200":
+          description: code","message"}
+          schema:
+            type: string
+      summary: 删除用户
+      tags:
+      - user
+  /user/findUserByNameAndPwd:
+    post:
+      parameters:
+      - description: name
+        in: formData
+        name: name
+        type: string
+      - description: password
+        in: formData
+        name: password
+        type: string
+      responses:
+        "200":
+          description: code","data"}
+          schema:
+            type: string
+      summary: 查询用户信息
+      tags:
+      - user
+  /user/getUserList:
+    get:
+      responses:
+        "200":
+          description: code","message"}
+          schema:
+            type: string
+      tags:
+      - user
+  /user/updateUser:
+    post:
+      parameters:
+      - description: id
+        in: formData
+        name: id
+        type: string
+      - description: name
+        in: formData
+        name: name
+        type: string
+      - description: password
+        in: formData
+        name: password
+        type: string
+      - description: phone
+        in: formData
+        name: phone
+        type: string
+      - description: email
+        in: formData
+        name: email
+        type: string
+      responses:
+        "200":
+          description: code","message"}
+          schema:
+            type: string
+      summary: 更新用户信息
+      tags:
+      - user
+swagger: "2.0"
