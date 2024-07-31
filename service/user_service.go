@@ -273,3 +273,60 @@ func SearchFriend(c *gin.Context) {
 	utils.RespOKList(c.Writer, users, len(users))
 
 }
+
+func AddFriend(c *gin.Context) {
+	userIdInt, _ := strconv.Atoi(c.PostForm("userId"))
+	targetIdInt, _ := strconv.Atoi(c.PostForm("targetId"))
+	userId := uint(userIdInt)
+	targetId := uint(targetIdInt)
+	code, msg := models.AddFriend(userId, targetId)
+	if code == 1 {
+		utils.RespOK(c.Writer, code, msg)
+	} else {
+		utils.RespFail(c.Writer, msg)
+	}
+
+}
+
+func CreateCommunity(c *gin.Context) {
+	ownerIdInt, _ := strconv.Atoi(c.PostForm("ownerId"))
+	ownerId := uint(ownerIdInt)
+	name := c.PostForm("name")
+	community := models.Community{}
+
+	community.OwnerId = ownerId
+	community.Name = name
+	fmt.Println(community)
+	code, msg := models.CreateCommunity(community)
+	if code == 1 {
+		utils.RespOK(c.Writer, code, msg)
+	} else {
+		utils.RespFail(c.Writer, msg)
+	}
+
+}
+
+// 加载群列表
+func LoadCommunity(c *gin.Context) {
+	ownerId, _ := strconv.Atoi(c.PostForm("ownerId"))
+	data, msg := models.LoadCommunity(uint(ownerId))
+	if len(data) == 0 {
+		utils.RespFail(c.Writer, msg)
+	} else {
+		utils.RespOKList(c.Writer, data, len(data))
+	}
+
+}
+
+// 加入群 userId uint, comId, uint
+func JoinGroup(c *gin.Context) {
+	userIdint, _ := strconv.Atoi(c.PostForm("userId"))
+	comId := c.PostForm("comId")
+
+	data, msg := models.JoinGroup(uint(userIdint), comId)
+	if data == 0 {
+		utils.RespOK(c.Writer, data, msg)
+	} else {
+		utils.RespFail(c.Writer, msg)
+	}
+}
