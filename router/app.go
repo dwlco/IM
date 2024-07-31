@@ -49,5 +49,7 @@ func Router() *gin.Engine {
 	r.GET("/user/sendMsg", service.SendMessage)
 	//私聊发送消息
 	r.GET("/user/sendUserMsg", service.SendUserMsg)
+	//获取redis信息
+	r.POST("/user/redisMsg", service.RedisMsg)
 	return r
 }

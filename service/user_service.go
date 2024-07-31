@@ -171,6 +171,7 @@ func UpdateUser(c *gin.Context) {
 	user.Name = c.PostForm("name")
 	user.PassWord = c.PostForm("password")
 	user.Phone = c.PostForm("phone")
+	user.Avatar = c.PostForm("icon")
 	user.Email = c.PostForm("email")
 	_, err := govalidator.ValidateStruct(user)
 	if err != nil {
@@ -292,10 +293,14 @@ func CreateCommunity(c *gin.Context) {
 	ownerIdInt, _ := strconv.Atoi(c.PostForm("ownerId"))
 	ownerId := uint(ownerIdInt)
 	name := c.PostForm("name")
+	icon := c.PostForm("icon")
+	desc := c.PostForm("desc")
 	community := models.Community{}
 
 	community.OwnerId = ownerId
 	community.Name = name
+	community.Img = icon
+	community.Desc = desc
 	fmt.Println(community)
 	code, msg := models.CreateCommunity(community)
 	if code == 1 {
@@ -328,5 +333,22 @@ func JoinGroup(c *gin.Context) {
 		utils.RespOK(c.Writer, data, msg)
 	} else {
 		utils.RespFail(c.Writer, msg)
+	}
+}
+
+// 读取redisMsg
+func RedisMsg(c *gin.Context) {
+	userIdAInt, _ := strconv.Atoi(c.PostForm("userIdA"))
+	userIdA := int64(userIdAInt)
+	userIdBInt, _ := strconv.Atoi(c.PostForm("userIdB"))
+	userIdB := int64(userIdBInt)
+	start, _ := strconv.Atoi(c.PostForm("start"))
+	end, _ := strconv.Atoi(c.PostForm("end"))
+	isRev, _ := strconv.ParseBool(c.PostForm("isRev"))
+	res := models.RedisMsg(userIdA, userIdB, int64(start), int64(end), isRev)
+	if res != nil {
+		utils.RespOKList(c.Writer, "ok", res)
+	} else {
+		utils.RespFail(c.Writer, "获取缓存消息失败")
 	}
 }

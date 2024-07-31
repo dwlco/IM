@@ -24,11 +24,11 @@ func main() {
 	fmt.Println("config mysql testing......")
 
 	// Migrate the schema
-	//DB.AutoMigrate(&models.UserBasic{})
+	DB.AutoMigrate(&models.UserBasic{})
 	// DB.AutoMigrate(&models.Message{})
 	// DB.AutoMigrate(&models.GroupBasic{})
 	// DB.AutoMigrate(&models.Contact{})
-	DB.AutoMigrate(&models.Community{})
+	// DB.AutoMigrate(&models.Community{})
 	// Create
 
 	// user := models.UserBasic{}

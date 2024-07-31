@@ -1,13 +1,17 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"ginchat/utils"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
 	"gopkg.in/fatih/set.v0"
 	"gorm.io/gorm"
@@ -15,15 +19,16 @@ import (
 
 type Message struct {
 	gorm.Model
-	FromId   int64  //发送者
-	TargetId int64  //接受者
-	Type     int    //发送类型 1私聊 2群聊 3广播
-	Media    int    //消息类型 1文字 2表情包 3图片 4音频
-	Content  string //消息内容
-	Pic      string
-	Url      string
-	Desc     string
-	Amount   int //其他数字统计
+	UserId     int64  //发送者
+	TargetId   int64  //接受者
+	Type       int    //发送类型 1私聊 2群聊 3广播
+	Media      int    //消息类型 1文字 2表情包 3图片 4音频
+	Content    string //消息内容
+	CreateTime int64
+	Pic        string
+	Url        string
+	Desc       string
+	Amount     int //其他数字统计
 }
 
 func (table *Message) TableName() string {
@@ -196,9 +201,93 @@ func SendMsg(userId int64, msg []byte) {
 	node, ok := clientMap[userId]
 	rwLocker.RUnlock()
 
+	jsonMsg := Message{}
+	json.Unmarshal(msg, &jsonMsg)
+	ctx := context.Background()
+	//传进函数中的userId是message中的targetId
+	targetIdStr := strconv.Itoa(int(userId))
+	//解析msg后，将message中的userId赋值给userId
+	userIdStr := strconv.Itoa(int(jsonMsg.UserId))
+	jsonMsg.CreateTime = time.Now().Unix()
+	//查找缓存中是否存在此发送者信息
+	r, err := utils.Red.Get(ctx, "online_"+userIdStr).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	if r != "" {
+		//发送信息给接收者
+		if ok {
+			fmt.Println("sendMsg >>> userID: ", userId, " msg:", string(msg))
+			//将消息发送至页面
+			node.DataQuene <- msg
+		}
+	}
+	var key string
+	//对targetId和userId进行排序，小的在前数值大的在后面作为key
+	//userId代表msg里面的targetId，jaonMsg.userId代表msg里面的userId
+	if userId > jsonMsg.UserId {
+		key = "msg_" + userIdStr + "_" + targetIdStr
+	} else {
+		key = "msg_" + targetIdStr + "_" + userIdStr
+	}
+	//倒序排序
+	res, err := utils.Red.ZRevRange(ctx, key, 0, -1).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	score := float64(cap(res)) + 1
+	//添加数据至redis
+	ress, e := utils.Red.ZAdd(ctx, key, &redis.Z{score, msg}).Result()
+	if e != nil {
+		fmt.Println(e)
+	}
+	fmt.Println(ress)
+
+}
+
+// 获取缓存里面的消息
+func RedisMsg(userIdA int64, userIdB int64, start int64, end int64, isRev bool) []string {
+	rwLocker.RLock()
+	_, ok := clientMap[userIdA]
+	rwLocker.RUnlock()
+	ctx := context.Background()
+	userIdStr := strconv.Itoa(int(userIdA))
+	targetIdStr := strconv.Itoa(int(userIdB))
+	var key string
+	if userIdA > userIdB {
+		key = "msg_" + targetIdStr + "_" + userIdStr
+	} else {
+		key = "msg_" + userIdStr + "_" + targetIdStr
+	}
+	var rels []string
+	var err error
+	if isRev {
+		//倒序
+		rels, err = utils.Red.ZRevRange(ctx, key, start, end).Result()
+	} else {
+		rels, err = utils.Red.ZRange(ctx, key, start, end).Result()
+	}
+
+	if err != nil {
+		fmt.Println(err)
+	}
 	if ok {
-		fmt.Println("sendMsg: ", string(msg))
-		node.DataQuene <- msg
+		return rels
+		// for _, val := range rels {
+		// 	//后台通过websocket将redis消息推送至页面
+
+		// 	fmt.Println("sendMsg >>> userID: ", userIdA, " msg:", val)
+		// 	node.DataQuene <- []byte(val)
+
+		// }
+	} else {
+		//登录的时候会将userId存到前端session
+		//未登录前端userId()方法无法获得userId
+		//消息传递的时候无法添加userId至clientMap
+		//后续node就未赋值
+		//未读取到userId，即未登录
+		fmt.Println("未登录,无法读取redis")
+		return nil
 	}
 
 }
